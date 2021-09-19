@@ -9,6 +9,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,15 +34,18 @@ public class ParkingController {
     }
 
     @PostMapping("/{plate}")
-//    TODO:Não deixa ele cadastrar a mesma plac
+//    TODO:Não deixa ser cadastrado placas iguais se a ultima não estiver paga.
     public Long reserveParking(@PathVariable("plate") String plate) {
-        Parking parking = new Parking(plate, "60 minutos", false, false);
+        long millis=System.currentTimeMillis();
+        Date dateEntry = new java.util.Date(millis);
+
+        Parking parking = new Parking(plate, "60 minutos", false, false, dateEntry, null);
         this.parkingRepository.save(parking);
-//        return parki;
         return this.parkingRepository.save(parking).getId();
     }
 
     @PatchMapping("/{plate}/pay")
+    //    TODO: Fazer findbyPlate pegar sempre o ultimo da lista
     public Parking payParking(@PathVariable("plate") String plate) {
         Parking park=this.parkingRepository.findByPlate(plate).get(0);
         park.setPaid(true);
@@ -50,12 +54,17 @@ public class ParkingController {
     }
 
     @PatchMapping("/{plate}/out")
+//    TODO: Fazer findbyPlate pegar sempre o ultimo da lista
     public String outParking(@PathVariable("plate") String plate) {
         Parking park=this.parkingRepository.findByPlate(plate).get(0);
         if (park.isPaid()) {
+            long millis=System.currentTimeMillis();
+            Date dateOut = new java.util.Date(millis);
+
             park.setOut(true);
+            park.setDateTimeOut(dateOut);
             this.parkingRepository.save(park);
-            return "Obrigado";
+            return "Muito Obrigado, Volte Sempre.";
         }
         else {
             return "O Estacionamento Ainda Não Foi Pago";
