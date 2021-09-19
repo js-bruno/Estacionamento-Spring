@@ -3,10 +3,15 @@ package com.parking.api.controller;
 import com.parking.api.model.Parking;
 import com.parking.api.repository.ParkingRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/parking")
@@ -28,8 +33,7 @@ public class ParkingController {
     }
 
     @PostMapping("/{plate}")
-//    TODO:Não deixa ele cadastrar a mesma placa
-    //    TODO:Não
+//    TODO:Não deixa ele cadastrar a mesma plac
     public Long reserveParking(@PathVariable("plate") String plate) {
         Parking parking = new Parking(plate, "60 minutos", false, false);
         this.parkingRepository.save(parking);
@@ -57,6 +61,22 @@ public class ParkingController {
             return "O Estacionamento Ainda Não Foi Pago";
         }
 
+    }
+
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public Map<String, String> handleValidationException(MethodArgumentNotValidException ex) {
+        Map<String, String> errors = new HashMap<>();
+
+        ex.getBindingResult().getAllErrors().forEach((error) -> {
+
+            String fieldName = ((FieldError) error).getField();
+            String errorMessage = error.getDefaultMessage();
+            errors.put(fieldName, errorMessage);
+
+        });
+
+        return errors;
     }
 
 }
