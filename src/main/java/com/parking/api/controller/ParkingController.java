@@ -16,7 +16,6 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/parking")
-//@Api("")
 
 public class ParkingController {
 
@@ -34,36 +33,44 @@ public class ParkingController {
     }
 
     @PostMapping("/{plate}")
-//    TODO:Não deixa ser cadastrado placas iguais se a ultima não estiver paga.
-    public Long reserveParking(@PathVariable("plate") String plate) {
+    public String reserveParking(@PathVariable("plate") String plate) {
+        List<Parking> parkings = this.parkingRepository.findByPlate(plate);
+        if(!parkings.isEmpty()) {
+            Parking lastPark = parkings.get(parkings.size() - 1);
+            if (!lastPark.isOut()) {
+                return "Veiculo já esta estacionado";
+            }
+        }
+
         long millis=System.currentTimeMillis();
         Date dateEntry = new java.util.Date(millis);
 
         Parking parking = new Parking(plate, "60 minutos", false, false, dateEntry, null);
         this.parkingRepository.save(parking);
-        return this.parkingRepository.save(parking).getId();
+//        return this.parkingRepository.save(parking).getId();
+        return "Veiculo Estacionado com sucesso";
     }
 
     @PatchMapping("/{plate}/pay")
-    //    TODO: Fazer findbyPlate pegar sempre o ultimo da lista
     public Parking payParking(@PathVariable("plate") String plate) {
-        Parking park=this.parkingRepository.findByPlate(plate).get(0);
-        park.setPaid(true);
-        this.parkingRepository.save(park);
-        return park;
+        List<Parking> park=this.parkingRepository.findByPlate(plate);
+        Parking lastPark = park.get(park.size() - 1);
+        lastPark.setPaid(true);
+        this.parkingRepository.save(lastPark);
+        return lastPark;
     }
 
     @PatchMapping("/{plate}/out")
-//    TODO: Fazer findbyPlate pegar sempre o ultimo da lista
     public String outParking(@PathVariable("plate") String plate) {
-        Parking park=this.parkingRepository.findByPlate(plate).get(0);
-        if (park.isPaid()) {
+        List<Parking> park=this.parkingRepository.findByPlate(plate);
+        Parking lastPark = park.get(park.size() - 1);
+        if (lastPark.isPaid()) {
             long millis=System.currentTimeMillis();
             Date dateOut = new java.util.Date(millis);
 
-            park.setOut(true);
-            park.setDateTimeOut(dateOut);
-            this.parkingRepository.save(park);
+            lastPark.setOut(true);
+            lastPark.setDateTimeOut(dateOut);
+            this.parkingRepository.save(lastPark);
             return "Muito Obrigado, Volte Sempre.";
         }
         else {
